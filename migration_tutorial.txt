@@ -1,0 +1,25 @@
+Script PRE (pre-migration.py)
+In questa fase "parcheggiamo" i dati in una tabella che Odoo non conosce, così non può toccarla.
+
+Python
+def migrate(cr, version):
+    # Creiamo una tabella temporanea 'buffer'
+    cr.execute("""
+        CREATE TABLE IF NOT EXISTS temp_hr_contract_data AS
+        SELECT id AS old_contract_id, name, employee_id, date_start, wage
+        FROM hr_contract
+    """)
+2. Script POST (post-migration.py)
+In questa fase il modulo è già installato, le tabelle ufficiali di hr_version esistono già e sono pronte a ricevere i dati.
+
+Python
+def migrate(cr, version):
+    # Spostiamo i dati dalla tabella temporanea a quella ufficiale del nuovo modulo
+    cr.execute("""
+        INSERT INTO hr_version (name, contract_id, employee_id, date_start, amount)
+        SELECT name, old_contract_id, employee_id, date_start, wage
+        FROM temp_hr_contract_data
+    """)
+
+    # Una volta verificato che tutto è ok, cancelliamo la tabella temporanea
+    cr.execute("DROP TABLE IF EXISTS temp_hr_contract_data")
